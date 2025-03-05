@@ -6,15 +6,25 @@ st.set_page_config(layout="wide")
 # 🔒 `secrets.toml`에서 비밀번호 가져오기
 PASSWORD = st.secrets["general"]["password"]
 
+# ✅ 세션 상태 초기화 (처음 접속할 때 한 번만 실행)
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False  # 인증 상태 저장
+
 def check_password():
     """비밀번호 입력이 올바른지 확인"""
-    password = st.text_input("🔑 비밀번호를 입력하세요:", type="password")
-    if password == PASSWORD:
-        return True
-    elif password:
-        st.error("❌ 비밀번호가 틀렸습니다. 다시 시도하세요.")
-        return False
-    return False
+    if not st.session_state.authenticated:
+        password_container = st.empty()  # 비밀번호 입력 필드를 감싸는 컨테이너 생성
+        password = password_container.text_input("🔑 비밀번호를 입력하세요:", type="password")
+
+        if password:
+            if password == PASSWORD:
+                st.session_state.authenticated = True  # 인증 완료
+                password_container.empty()  # ✅ 인증 후 입력 필드 삭제
+                st.rerun()  # ✅ 페이지를 다시 실행하여 입력 필드가 완전히 사라지게 함
+            else:
+                st.error("❌ 비밀번호가 틀렸습니다. 다시 시도하세요.")
+
+    return st.session_state.authenticated
 
 if not check_password():
     st.stop()  # ❌ 비밀번호가 틀리면 코드 실행 중단
