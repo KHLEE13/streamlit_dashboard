@@ -1,4 +1,25 @@
 import streamlit as st
+
+# 대시보드 레이아웃
+st.set_page_config(layout="wide")
+
+# 🔒 `secrets.toml`에서 비밀번호 가져오기
+PASSWORD = st.secrets["general"]["password"]
+
+def check_password():
+    """비밀번호 입력이 올바른지 확인"""
+    password = st.text_input("🔑 비밀번호를 입력하세요:", type="password")
+    if password == PASSWORD:
+        return True
+    elif password:
+        st.error("❌ 비밀번호가 틀렸습니다. 다시 시도하세요.")
+        return False
+    return False
+
+if not check_password():
+    st.stop()  # ❌ 비밀번호가 틀리면 코드 실행 중단
+
+# ✅ 비밀번호 인증 후 실행되는 코드 (아래 원래 작성한 코드 유지)
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -6,9 +27,6 @@ import plotly.subplots as sp
 import os
 import gdown
 import chardet
-
-# 대시보드 레이아웃
-st.set_page_config(layout="wide")
 
 # 회사 로고 URL 또는 로컬 파일 경로 설정
 logo_url = "https://cdn.worldvectorlogo.com/logos/publicis-groupe-vector-logo.svg" 
@@ -18,7 +36,7 @@ st.markdown(
     f"""
     <div style="display: flex; align-items: center; margin-bottom: 30px;">
         <img src="{logo_url}" height="80" width="80" style="margin-right: 10px;">
-        <h1 style="margin: 0; padding: 0;">Publicis Groupe Korea Dashboard - Test Version</h1>
+        <h1 style="margin: 0; padding: 0;">Publicis Groupe Korea Dashboard</h1>
     </div>
     """,
     unsafe_allow_html=True
