@@ -3,8 +3,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.subplots as sp
-import numpy as np
-from sklearn.linear_model import LinearRegression
 import os
 import gdown
 import chardet
@@ -20,7 +18,7 @@ st.markdown(
     f"""
     <div style="display: flex; align-items: center; margin-bottom: 30px;">
         <img src="{logo_url}" height="80" width="80" style="margin-right: 10px;">
-        <h1 style="margin: 0; padding: 0;">Publicis Groupe Korea Dashboard</h1>
+        <h1 style="margin: 0; padding: 0;">Publicis Groupe Korea Dashboard - Test Version</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -528,7 +526,7 @@ if df_buzz is not None:
                 "긍정": "#00008B",  # Dark Blue
                 "부정": "#8B0000",  # Dark Red
                 "중립": "#4E4E50",  # Gray
-                "검색어": "#4B0082"  # ✅ 검색어도 연관어와 동일한 보라색 유지
+                "검색어": "#008B8B"  # Dark Cyan
             }
             bar_color = color_map[keyword_type] if keyword_type in color_map else color_map[selected_sentiment]
 
