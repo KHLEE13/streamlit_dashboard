@@ -6,6 +6,8 @@ import plotly.subplots as sp
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import os
+import gdown
+import chardet
 
 # 대시보드 레이아웃
 st.set_page_config(layout="wide")
@@ -46,49 +48,75 @@ brand_logos = {
     "롯데리아": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Lotteria_logo.svg/1920px-Lotteria_logo.svg.png"
 }
 
-# 파일 경로 설정
-buzz_file = "Data/01.Social_Buzz_Monthly.csv"
-search_file = "Data/02.SearchVolume_Monthly.csv"
-sentiment_file = "Data/04.Sentiment_Buzz_Monthly.csv"
-keyword_file = "Data/05.Keyword_Monthly.csv"
-search_keyword_file = "Data/06.Search_Keyword_Monthly.csv"
-sentiment_keyword_file = "Data/07.Sentiment_Keyword_Monthly.csv"
-search_keyword_gender_file = "Data/08.Search_Keyword_Gender_Monthly.csv"
-search_keyword_age_file = "Data/09.Search_Keyword_Age_Monthly.csv"
+# ✅ Google Drive 파일 ID 매핑
+file_links = {
+    "01.Social_Buzz_Monthly.csv": "1-2fNHis_rQvrOqrhvGUFqXL64OcGPvbn",
+    "02.SearchVolume_Monthly.csv": "1r8LpCvwb-FvQvKnMqimE7xOnrMkr4hCf",
+    "04.Sentiment_Buzz_Monthly.csv": "19mmYdWEbDdh0D2okPMFDqPjo0IkqdHl7",
+    "05.Keyword_Monthly.csv": "1HutFBwcKVkDs_IR2vRlD3a7q-RzRwVLF",
+    "06.Search_Keyword_Monthly.csv": "1U7iZU2iqnezsB_HGhYuH9akKD3h675jf",
+    "07.Sentiment_Keyword_Monthly.csv": "1UbGxKX81iBJqbQB62IFDbVAOta5vcXko",
+    "08.Search_Keyword_Gender_Monthly.csv": "1KzlKvy76zoQtc-Kx_xz1OauFHqO4cyrR",
+    "09.Search_Keyword_Age_Monthly.csv": "1mooWsfx-YnqbGeyHFs4tinDb_70VIzt1"
+}
 
-# 데이터 로드 함수
-def load_data():
-    files = [buzz_file, search_file, sentiment_file, keyword_file, 
-             search_keyword_file, sentiment_keyword_file, search_keyword_gender_file, search_keyword_age_file]
-    if not all(os.path.exists(f) for f in files):
-        st.error("데이터 파일을 찾을 수 없습니다. 파일 경로를 확인하세요.")
-        return None, None, None, None, None, None, None, None
-    
-    df_buzz = pd.read_csv(buzz_file, encoding="utf-8")
-    df_search = pd.read_csv(search_file, encoding="utf-8")
-    df_sentiment = pd.read_csv(sentiment_file, encoding="utf-8")
-    df_keywords = pd.read_csv(keyword_file, encoding="utf-8")
-    df_search_keywords = pd.read_csv(search_keyword_file, encoding="utf-8")
-    df_sentiment_keyword = pd.read_csv(sentiment_keyword_file, encoding="utf-8")
-    df_search_keyword_gender = pd.read_csv(search_keyword_gender_file, encoding="utf-8")
-    df_search_keyword_age = pd.read_csv(search_keyword_age_file, encoding="utf-8")
+# ✅ 데이터 저장 폴더 생성
+data_dir = "Data"
+os.makedirs(data_dir, exist_ok=True)
 
-    date_formats = {
-        buzz_file: "%Y-%m",
-        search_file: "%Y-%m",
-        sentiment_file: "%Y-%m",
-        keyword_file: "%Y-%m-%d",
-        search_keyword_file: "%Y-%m",
-        sentiment_keyword_file: "%Y-%m-%d"
-    }
-    
-    for df, file in zip([df_buzz, df_search, df_sentiment, df_keywords, df_search_keywords, df_sentiment_keyword], files):
-        df['날짜'] = pd.to_datetime(df['날짜'], format=date_formats[file], errors='coerce')
-        df['연도-월'] = df['날짜'].dt.strftime('%Y-%m')
-    
-    return df_buzz, df_search, df_sentiment, df_keywords, df_search_keywords, df_sentiment_keyword, df_search_keyword_gender, df_search_keyword_age
+# ✅ Google Drive에서 파일 다운로드
+def download_from_drive(file_name, file_id):
+    file_path = os.path.join(data_dir, file_name)
+    if not os.path.exists(file_path):  # 이미 존재하면 다운로드 생략
+        file_url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(file_url, file_path, quiet=False)
+    return file_path
 
-df_buzz, df_search, df_sentiment, df_keywords, df_search_keywords, df_sentiment_keyword, df_search_keyword_gender, df_search_keyword_age = load_data()
+# ✅ 인코딩 감지 함수
+def detect_encoding(file_path):
+    with open(file_path, "rb") as f:
+        result = chardet.detect(f.read())
+    return result["encoding"]
+
+# ✅ CSV 파일 로드 함수 (자동 인코딩 감지)
+def load_csv_with_encoding(file_name):
+    file_path = download_from_drive(file_name, file_links[file_name])
+    encoding = detect_encoding(file_path)  # 자동 인코딩 감지
+    try:
+        return pd.read_csv(file_path, encoding=encoding)
+    except Exception as e:
+        st.error(f"⚠️ {file_name} 로드 중 오류 발생: {e}")
+        return None
+
+# ✅ 데이터 로드 실행
+dataframes = {file_name: load_csv_with_encoding(file_name) for file_name in file_links.keys()}
+
+# ✅ 날짜 형식 지정
+date_formats = {
+    "01.Social_Buzz_Monthly.csv": "%Y-%m",
+    "02.SearchVolume_Monthly.csv": "%Y-%m",
+    "04.Sentiment_Buzz_Monthly.csv": "%Y-%m",
+    "05.Keyword_Monthly.csv": "%Y-%m-%d",
+    "06.Search_Keyword_Monthly.csv": "%Y-%m",
+    "07.Sentiment_Keyword_Monthly.csv": "%Y-%m-%d",
+}
+
+# ✅ 날짜 변환 적용
+for file_name, date_format in date_formats.items():
+    df = dataframes.get(file_name)
+    if df is not None and "날짜" in df.columns:
+        df["날짜"] = pd.to_datetime(df["날짜"], format=date_format, errors="coerce")
+        df["연도-월"] = df["날짜"].dt.strftime("%Y-%m")
+
+# ✅ 최종 데이터프레임 반환
+df_buzz = dataframes.get("01.Social_Buzz_Monthly.csv")
+df_search = dataframes.get("02.SearchVolume_Monthly.csv")
+df_sentiment = dataframes.get("04.Sentiment_Buzz_Monthly.csv")
+df_keywords = dataframes.get("05.Keyword_Monthly.csv")
+df_search_keywords = dataframes.get("06.Search_Keyword_Monthly.csv")
+df_sentiment_keyword = dataframes.get("07.Sentiment_Keyword_Monthly.csv")
+df_search_keyword_gender = dataframes.get("08.Search_Keyword_Gender_Monthly.csv")
+df_search_keyword_age = dataframes.get("09.Search_Keyword_Age_Monthly.csv")
 
 if df_buzz is not None:
     max_date = df_buzz['날짜'].max()
@@ -107,7 +135,6 @@ if df_buzz is not None:
         dist_channels = [ch for ch in df_buzz['채널'].unique() if ch != "전체"]
         selected_channels = st.multiselect("📌 소셜미디어 채널 선택", dist_channels, default=[ch for ch in default_channels if ch in dist_channels])
         selected_period = st.selectbox("📆 기간 선택", list(period_options.keys()), index=3)
-        # selected_sentiment = st.sidebar.radio("📌 감성어 선택", ["긍정", "부정", "중립"])
         
     # 1번 탭 데이터 (소셜 미디어)
     # 소셜 버즈 카드 데이터 필터링
